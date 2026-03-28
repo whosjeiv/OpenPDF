@@ -1,0 +1,50 @@
+{
+  "name": "openpdf",
+  "version": "1.0.0",
+  "description": "OpenPDF - Convierte, edita, crea y organiza tus PDFs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": [
+    "pdf",
+    "editor",
+    "converter"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jimp": "^1.6.0",
+    "mammoth": "^1.9.0",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.34.1",
+    "sortablejs": "^1.15.7"
+  },
+  "devDependencies": {
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.jotap.openpdf",
+    "productName": "OpenPDF",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": ["**/*"]
+      }
+    ]
+  }
+}

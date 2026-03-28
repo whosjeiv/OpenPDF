@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenPDF</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+</head>
+<body>
+  <!-- ─── Title Bar ─── -->
+  <div class="titlebar" id="titlebar">
+    <div class="titlebar-left">
+      <div class="app-logo">
+        <img src="logo.png" width="22" height="22" alt="OpenPDF Logo" style="object-fit: contain;">
+      </div>
+      <span class="titlebar-title">OpenPDF</span>
+    </div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn" id="btn-minimize" title="Minimizar">
+        <svg width="12" height="12" viewBox="0 0 12 12"><rect y="5" width="12" height="2" rx="1" fill="currentColor"/></svg>
+      </button>
+      <button class="titlebar-btn" id="btn-maximize" title="Maximizar">
+        <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      </button>
+      <button class="titlebar-btn titlebar-btn-close" id="btn-close" title="Cerrar">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Main Layout ─── -->
+  <div class="app-container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-nav">
+        <button class="nav-item active" data-view="home" id="nav-home">
+          <span class="material-icons-round">home</span>
+          <span class="nav-label">Inicio</span>
+        </button>
+        <button class="nav-item" data-view="convert" id="nav-convert">
+          <span class="material-icons-round">swap_horiz</span>
+          <span class="nav-label">Convertir</span>
+        </button>
+        <button class="nav-item" data-view="merge" id="nav-merge">
+          <span class="material-icons-round">merge_type</span>
+          <span class="nav-label">Unir</span>
+        </button>
+        <button class="nav-item" data-view="edit" id="nav-edit">
+          <span class="material-icons-round">edit_note</span>
+          <span class="nav-label">Editar</span>
+        </button>
+        <button class="nav-item" data-view="create" id="nav-create">
+          <span class="material-icons-round">note_add</span>
+          <span class="nav-label">Crear</span>
+        </button>
+        <button class="nav-item" data-view="organize" id="nav-organize">
+          <span class="material-icons-round">sort</span>
+          <span class="nav-label">Organizar</span>
+        </button>
+        <button class="nav-item" data-view="tools" id="nav-tools">
+          <span class="material-icons-round">build</span>
+          <span class="nav-label">Herramientas</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="content" id="content">
+
+      <!-- ─── HOME VIEW ─── -->
+      <section class="view active" id="view-home">
+        <div class="home-hero">
+          <div class="hero-icon" style="background: transparent; animation: none; padding: 0;">
+            <img src="logo.png" width="96" height="96" alt="OpenPDF Logo" style="object-fit: contain;">
+          </div>
+          <h1 class="hero-title">Bienvenido a <span class="accent">OpenPDF</span></h1>
+          <p class="hero-subtitle">Tu herramienta todo-en-uno para trabajar con documentos PDF</p>
+          <div class="hero-cards">
+            <div class="hero-card" data-action="convert">
+              <div class="card-icon convert-icon">
+                <span class="material-icons-round">swap_horiz</span>
+              </div>
+              <h3>Convertir</h3>
+              <p>Word e imágenes a PDF</p>
+            </div>
+            <div class="hero-card" data-action="merge">
+              <div class="card-icon merge-icon">
+                <span class="material-icons-round">merge_type</span>
+              </div>
+              <h3>Unir PDFs</h3>
+              <p>Combina varios archivos</p>
+            </div>
+            <div class="hero-card" data-action="edit">
+              <div class="card-icon edit-icon">
+                <span class="material-icons-round">edit_note</span>
+              </div>
+              <h3>Editar</h3>
+              <p>Modifica texto y más</p>
+            </div>
+            <div class="hero-card" data-action="create">
+              <div class="card-icon create-icon">
+                <span class="material-icons-round">note_add</span>
+              </div>
+              <h3>Crear</h3>
+              <p>Nuevo PDF en blanco</p>
+            </div>
+            <div class="hero-card" data-action="organize">
+              <div class="card-icon organize-icon">
+                <span class="material-icons-round">sort</span>
+              </div>
+              <h3>Organizar</h3>
+              <p>Reordena páginas</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── CONVERT VIEW ─── -->
+      <section class="view" id="view-convert">
+        <div class="view-header">
+          <h2><span class="material-icons-round view-header-icon">swap_horiz</span> Conversor Universal</h2>
+          <p class="view-description">Convierte documentos a PDF o extrae su contenido a Word e Imágenes</p>
+        </div>
+
+        <div class="tab-container" style="display:flex; gap:10px; margin-bottom:20px;">
+          <button class="btn btn-primary" id="tab-to-pdf">Convertir a PDF</button>
+          <button class="btn btn-secondary" id="tab-from-pdf">Convertir desde PDF</button>
+        </div>
+
+        <!-- Panel 1: Convert To PDF -->
+        <div id="panel-to-pdf">
+          <div class="drop-zone" id="convert-dropzone">
+            <div class="drop-zone-content">
+              <span class="material-icons-round drop-icon">cloud_upload</span>
+              <p class="drop-text">Arrastra Word o Imágenes aquí o</p>
+              <button class="btn btn-primary" id="btn-convert-browse">
+                <span class="material-icons-round">folder_open</span>
+                Seleccionar archivos
+              </button>
+              <p class="drop-hint">Soporta: DOCX, PNG, JPG, BMP, GIF, TIFF, WebP</p>
+            </div>
+          </div>
+          <div class="file-list" id="convert-file-list"></div>
+          <div class="action-bar" id="convert-actions" style="display:none; justify-content: space-between; align-items: center;">
+            <label class="merge-toggle-container" style="display: flex; align-items: center; gap: 14px; cursor: pointer; padding: 10px 18px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); transition: all 0.3s ease; box-shadow: var(--shadow-sm); user-select: none;">
+              <div class="merge-toggle-logo" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: transparent; transition: transform 0.3s ease;">
+                <img src="logo.png" width="28" height="28" alt="OpenPDF Logo" style="object-fit: contain; filter: drop-shadow(0 2px 4px rgba(108, 99, 255, 0.2));">
+              </div>
+              <div style="display: flex; flex-direction: column; margin-right: 16px;">
+                <span style="font-size: 14.5px; font-weight: 600; color: var(--text-primary); line-height: 1.2;">Unir en un solo PDF</span>
+                <span style="font-size: 11.5px; color: var(--text-tertiary); margin-top: 2px;">Combina todo en un archivo único</span>
+              </div>
+              <div class="toggle-switch" style="position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; transition: background 0.3s ease;">
+                <input type="checkbox" id="convert-merge" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                <span class="toggle-slider" style="position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);"></span>
+              </div>
+            </label>
+            <style>
+              .merge-toggle-container:hover {
+                border-color: var(--accent);
+                box-shadow: var(--shadow-md);
+              }
+              .merge-toggle-container:has(input:checked) {
+                border-color: var(--accent);
+                background: linear-gradient(to right, var(--bg-secondary), var(--accent-light));
+              }
+              .merge-toggle-container:has(input:checked) .merge-toggle-logo {
+                transform: scale(1.05);
+              }
+              .merge-toggle-container:has(input:checked) .toggle-switch {
+                background: var(--accent);
+              }
+              .merge-toggle-container input:checked ~ .toggle-slider {
+                transform: translateX(20px);
+              }
+            </style>
+            <button class="btn btn-primary btn-lg" id="btn-convert-all">
+              <span class="material-icons-round">picture_as_pdf</span>
+              Convertir a PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel 2: Convert From PDF -->
+        <div id="panel-from-pdf" style="display:none;">
+          <div class="drop-zone" id="convert-from-dropzone">
+            <div class="drop-zone-content">
+              <span class="material-icons-round drop-icon">cloud_upload</span>
+              <p class="drop-text">Arrastra archivos PDF aquí o</p>
+              <button class="btn btn-primary" id="btn-convert-from-browse">
+                <span class="material-icons-round">folder_open</span>
+                Seleccionar PDF
+              </button>
+            </div>
+          </div>
+          <div class="file-list" id="convert-from-file-list"></div>
+          <div class="action-bar" id="convert-from-actions" style="display:none;">
+            <button class="btn btn-secondary btn-lg" id="btn-convert-to-images" title="Extrae cada página del PDF como una imagen PNG independiente">
+              <span class="material-icons-round">image</span>
+              PDF a Imágenes
+            </button>
+            <button class="btn btn-primary btn-lg" id="btn-convert-to-word" title="Usa MS Word para transcribir el PDF a formato DOCX editable">
+              <span class="material-icons-round">description</span>
+              PDF a Word
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── MERGE VIEW ─── -->
+      <section class="view" id="view-merge">
+        <div class="view-header">
+          <h2><span class="material-icons-round view-header-icon">merge_type</span> Unir PDFs</h2>
+          <p class="view-description">Combina múltiples archivos PDF en uno solo</p>
+        </div>
+        <div class="drop-zone" id="merge-dropzone">
+          <div class="drop-zone-content">
+            <span class="material-icons-round drop-icon">cloud_upload</span>
+            <p class="drop-text">Arrastra archivos PDF aquí o</p>
+            <button class="btn btn-primary" id="btn-merge-browse">
+              <span class="material-icons-round">folder_open</span>
+              Seleccionar PDFs
+            </button>
+          </div>
+        </div>
+        <div class="file-list sortable" id="merge-file-list"></div>
+        <div class="action-bar" id="merge-actions" style="display:none;">
+          <p class="hint-text"><span class="material-icons-round">info</span> Arrastra para reordenar los archivos</p>
+          <button class="btn btn-primary btn-lg" id="btn-merge-all">
+            <span class="material-icons-round">merge_type</span>
+            Unir PDFs
+          </button>
+        </div>
+      </section>
+
+      <!-- ─── EDIT VIEW ─── -->
+      <section class="view" id="view-edit">
+        <div class="view-header">
+          <h2><span class="material-icons-round view-header-icon">edit_note</span> Editor de PDF</h2>
+          <p class="view-description">Edita tu PDF con herramientas profesionales</p>
+        </div>
+        
+        <div class="edit-container" id="edit-container" style="display:none;">
+          <!-- Editor Toolbar -->
+          <div class="editor-toolbar">
+            <div class="toolbar-section">
+              <span class="toolbar-section-title">Archivo</span>
+              <div class="toolbar-buttons">
+                <button class="toolbar-btn" id="btn-edit-new" title="Nuevo PDF">
+                  <span class="material-icons-round">note_add</span>
+                </button>
+                <button class="toolbar-btn" id="btn-edit-save" title="Guardar">
+                  <span class="material-icons-round">save</span>
+                </button>
+                <button class="toolbar-btn" id="btn-edit-save-as" title="Guardar como">
+                  <span class="material-icons-round">save_as</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="toolbar-divider"></div>
+            
+            <div class="toolbar-section">
+              <span class="toolbar-section-title">Editar</span>
+              <div class="toolbar-buttons">
+                <button class="toolbar-btn" id="btn-add-text" title="Añadir texto">
+                  <span class="material-icons-round">text_fields</span>
+                </button>
+                <button class="toolbar-btn" id="btn-edit-find-replace" title="Buscar y Reemplazar">
+                  <span class="material-icons-round">find_replace</span>
+                </button>
+                <button class="toolbar-btn" id="btn-edit-extract-text" title="Editar todo el texto">
+                  <span class="material-icons-round">edit</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="toolbar-divider"></div>
+            
+            <div class="toolbar-section">
+              <span class="toolbar-section-title">Insertar</span>
+              <div class="toolbar-buttons">
+                <button class="toolbar-btn" id="btn-add-image" title="Añadir imagen">
+                  <span class="material-icons-round">add_photo_alternate</span>
+                </button>
+                <button class="toolbar-btn" id="btn-add-watermark" title="Marca de agua">
+                  <span class="material-icons-round">branding_watermark</span>
+                </button>
+                <button class="toolbar-btn" id="btn-add-page-numbers" title="Número de páginas">
+                  <span class="material-icons-round">format_list_numbered</span>
+                </button>
+                <button class="toolbar-btn" id="btn-add-header-footer" title="Encabezado/Pie">
+                  <span class="material-icons-round">sticky_note_2</span>
+                </button>
+                <button class="toolbar-btn" id="btn-add-link" title="Añadir enlace">
+                  <span class="material-icons-round">link</span>
+                </button>
+                <button class="toolbar-btn" id="btn-add-shape" title="Añadir forma">
+                  <span class="material-icons-round">category</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="toolbar-divider"></div>
+            
+            <div class="toolbar-section">
+              <span class="toolbar-section-title">Página</span>
+              <div class="toolbar-buttons">
+                <button class="toolbar-btn" id="btn-add-page" title="Nueva página">
+                  <span class="material-icons-round">add</span>
+                </button>
+                <button class="toolbar-btn" id="btn-delete-page" title="Eliminar página">
+                  <span class="material-icons-round">delete</span>
+                </button>
+                <button class="toolbar-btn" id="btn-rotate-page-left" title="Rotar izquierda">
+                  <span class="material-icons-round">rotate_left</span>
+                </button>
+                <button class="toolbar-btn" id="btn-rotate-page-right" title="Rotar derecha">
+                  <span class="material-icons-round">rotate_right</span>
+                </button>
+                <button class="toolbar-btn" id="btn-crop-page" title="Recortar página">
+                  <span class="material-icons-round">crop</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="toolbar-divider"></div>
+            
+            <div class="toolbar-section">
+              <span class="toolbar-section-title">Ver</span>
+              <div class="toolbar-buttons">
+                <button class="toolbar-btn" id="btn-zoom-out" title="Alejar">
+                  <span class="material-icons-round">zoom_out</span>
+                </button>
+                <span class="zoom-level" id="zoom-level">100%</span>
+                <button class="toolbar-btn" id="btn-zoom-in" title="Acercar">
+                  <span class="material-icons-round">zoom_in</span>
+                </button>
+                <button class="toolbar-btn" id="btn-fit-page" title="Ajustar a página">
+                  <span class="material-icons-round">fit_screen</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Main Editor Area -->
+          <div class="editor-main">
+            <!-- Left: Page Navigator -->
+            <div class="page-navigator-panel">
+              <div class="page-nav-header">
+                <span class="page-count-label">Páginas</span>
+                <button class="btn btn-ghost btn-sm" id="btn-add-page-thumb" title="Añadir página">
+                  <span class="material-icons-round">add</span>
+                </button>
+              </div>
+              <div class="page-navigator-scroll" id="page-navigator"></div>
+            </div>
+            
+            <!-- Center: Canvas -->
+            <div class="editor-canvas-container">
+              <div class="editor-canvas" id="editor-canvas">
+                <canvas id="pdf-render-canvas"></canvas>
+                <div class="editor-overlay" id="editor-overlay"></div>
+              </div>
+            </div>
+            
+            <!-- Right: Properties Panel -->
+            <div class="properties-panel" id="properties-panel">
+              <div class="properties-header">
+                <h4>Propiedades</h4>
+              </div>
+              <div class="properties-content" id="properties-content">
+                <div class="property-group">
+                  <label>Página actual:</label>
+                  <span class="property-value" id="current-page-display">1</span>
+                </div>
+                <div class="property-group">
+                  <label>Total páginas:</label>
+                  <span class="property-value" id="total-pages-display">1</span>
+                </div>
+                <div class="property-divider"></div>
+                <div class="property-group">
+                  <label class="property-section-title">Archivo</label>
+                  <div class="property-row">
+                    <span>Nombre:</span>
+                    <span class="property-value" id="filename-display" style="font-size:11px;">Sin título</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Status Bar -->
+          <div class="editor-status-bar">
+            <div class="status-left">
+              <span id="edit-filename-display">Sin título.pdf</span>
+            </div>
+            <div class="status-right">
+              <span id="page-info-display">Página 1 de 1</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Drop Zone (Initial State) -->
+        <div class="drop-zone" id="edit-dropzone">
+          <div class="drop-zone-content">
+            <span class="material-icons-round drop-icon">cloud_upload</span>
+            <p class="drop-text">Arrastra un PDF aquí o</p>
+            <button class="btn btn-primary" id="btn-edit-browse">
+              <span class="material-icons-round">folder_open</span>
+              Seleccionar PDF
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── CREATE VIEW ─── -->
+      <section class="view" id="view-create">
+        <div class="view-header">
+          <h2><span class="material-icons-round view-header-icon">note_add</span> Crear PDF</h2>
+          <p class="view-description">Crea un nuevo documento PDF desde cero</p>
+        </div>
+        <div class="create-options">
+          <div class="create-card" id="btn-create-blank">
+            <div class="create-card-icon">
+              <span class="material-icons-round">description</span>
+            </div>
+            <h3>PDF en blanco</h3>
+            <p>Crea un documento PDF vacío listo para editar</p>
+          </div>
+          <div class="create-card" id="btn-create-text">
+            <div class="create-card-icon">
+              <span class="material-icons-round">article</span>
+            </div>
+            <h3>PDF con texto</h3>
+            <p>Escribe contenido y genera un PDF</p>
+          </div>
+        </div>
+        <div class="text-editor-panel" id="text-editor-panel" style="display:none;">
+          <textarea class="text-editor" id="create-text-input" placeholder="Escribe o pega tu texto aquí..."></textarea>
+          <div class="action-bar">
+            <button class="btn btn-primary btn-lg" id="btn-generate-pdf">
+              <span class="material-icons-round">picture_as_pdf</span>
+              Generar PDF
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── ORGANIZE VIEW ─── -->
+      <section class="view" id="view-organize">
+        <div class="view-header">
+          <h2><span class="material-icons-round view-header-icon">sort</span> Organizar páginas</h2>
+          <p class="view-description">Reordena y elimina páginas de tu PDF</p>
+        </div>
+        <div class="drop-zone" id="organize-dropzone">
+          <div class="drop-zone-content">
+            <span class="material-icons-round drop-icon">cloud_upload</span>
+            <p class="drop-text">Arrastra un PDF aquí o</p>
+            <button class="btn btn-primary" id="btn-organize-browse">
+              <span class="material-icons-round">folder_open</span>
+              Seleccionar PDF
+            </button>
+          </div>
+        </div>
+        <div class="organize-container" id="organize-container" style="display:none;">
+          <div class="organize-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <p class="hint-text" style="margin:0;"><span class="material-icons-round">info</span> Arrastra las páginas para reordenarlas</p>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-ghost" id="btn-organize-clear" title="Limpieza (Quitar todo)">
+                <span class="material-icons-round" style="color:#ef4444;">delete_sweep</span>
+              </button>
+              <button class="btn btn-secondary" id="btn-organize-add-blank" title="Añadir página en blanco">
+                <span class="material-icons-round">note_add</span>
+              </button>
+              <button class="btn btn-secondary" id="btn-organize-add-pdf" title="Añadir páginas de otro PDF">
+                <span class="material-icons-round">picture_as_pdf</span> +
+              </button>
+              <button class="btn btn-primary" id="btn-save-organized">
+                <span class="material-icons-round">save</span>
+                Guardar
+              </button>
+            </div>
+          </div>
+          <div class="pages-grid" id="pages-grid"></div>
+        </div>
+      </section>
+
+      <!-- ─── TOOLS VIEW ─── -->
+      <section class="view" id="view-tools">
+        <div class="view-header">
+          <h2><span class="material-icons-round view-header-icon">build</span> Herramientas</h2>
+          <p class="view-description">Herramientas avanzadas para trabajar con tus PDFs</p>
+        </div>
+        <div class="tools-grid">
+          <!-- Split PDF -->
+          <div class="tool-card" id="tool-split">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #ef5350, #e57373);">
+              <span class="material-icons-round">call_split</span>
+            </div>
+            <h3>Dividir PDF</h3>
+            <p>Extrae páginas o divide cada página en un archivo independiente</p>
+          </div>
+          <!-- Compress PDF -->
+          <div class="tool-card" id="tool-compress">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #66bb6a, #81c784);">
+              <span class="material-icons-round">compress</span>
+            </div>
+            <h3>Comprimir PDF</h3>
+            <p>Reduce el tamaño de tu PDF manteniendo la calidad</p>
+          </div>
+          <!-- PowerPoint to PDF -->
+          <div class="tool-card" id="tool-ppt">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #ff7043, #ff8a65);">
+              <span class="material-icons-round">slideshow</span>
+            </div>
+            <h3>PowerPoint a PDF</h3>
+            <p>Convierte presentaciones PPT/PPTX a PDF</p>
+          </div>
+          <!-- Excel to PDF -->
+          <div class="tool-card" id="tool-excel">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #43a047, #66bb6a);">
+              <span class="material-icons-round">table_chart</span>
+            </div>
+            <h3>Excel a PDF</h3>
+            <p>Convierte hojas de cálculo XLS/XLSX a PDF</p>
+          </div>
+          <!-- Sign PDF -->
+          <div class="tool-card" id="tool-sign">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #5c6bc0, #7986cb);">
+              <span class="material-icons-round">draw</span>
+            </div>
+            <h3>Firmar PDF</h3>
+            <p>Dibuja o carga tu firma y colócala en el PDF</p>
+          </div>
+          <!-- Protect PDF -->
+          <div class="tool-card" id="tool-protect">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #42a5f5, #64b5f6);">
+              <span class="material-icons-round">shield</span>
+            </div>
+            <h3>Proteger PDF</h3>
+            <p>Encripta tu PDF con contraseña</p>
+          </div>
+          <!-- Unlock PDF -->
+          <div class="tool-card" id="tool-unlock">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #5c6bc0, #7986cb);">
+              <span class="material-icons-round">lock_open</span>
+            </div>
+            <h3>Desbloquear PDF</h3>
+            <p>Quita la contraseña de un PDF protegido</p>
+          </div>
+          <!-- Redact PDF -->
+          <div class="tool-card" id="tool-redact">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #78909c, #90a4ae);">
+              <span class="material-icons-round">visibility_off</span>
+            </div>
+            <h3>Censurar PDF</h3>
+            <p>Oculta información sensible con rectángulos negros</p>
+          </div>
+          <!-- Crop PDF -->
+          <div class="tool-card" id="tool-crop">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #ab47bc, #ba68c8);">
+              <span class="material-icons-round">crop</span>
+            </div>
+            <h3>Recortar PDF</h3>
+            <p>Elimina márgenes o recorta áreas específicas</p>
+          </div>
+          <!-- Translate PDF -->
+          <div class="tool-card" id="tool-translate">
+            <div class="tool-card-icon" style="background: linear-gradient(135deg, #26a69a, #4db6ac);">
+              <span class="material-icons-round">translate</span>
+            </div>
+            <h3>Traducir PDF</h3>
+            <p>Traduce todo el contenido de texto del PDF a otro idioma</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ═══════ TOOL MODALS ═══════ -->
+
+  <!-- Split PDF Modal -->
+  <div class="modal-overlay" id="split-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#ef5350;">call_split</span> Dividir PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('split-modal').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="split-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p class="split-file-name" id="split-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <div class="form-group">
+          <label>Modo de división:</label>
+          <select class="input-field" id="split-mode">
+            <option value="all">Cada página en un archivo</option>
+            <option value="range">Extraer rango de páginas</option>
+          </select>
+        </div>
+        <div id="split-range-options" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Desde página:</label>
+              <input type="number" class="input-field" id="split-start" value="1" min="1">
+            </div>
+            <div class="form-group">
+              <label>Hasta página:</label>
+              <input type="number" class="input-field" id="split-end" value="1" min="1">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('split-modal').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="split-confirm">Dividir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compress PDF Modal -->
+  <div class="modal-overlay" id="compress-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#66bb6a;">compress</span> Comprimir PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('compress-modal').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="compress-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p id="compress-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <div id="compress-result" style="display:none; padding:16px; background:var(--bg-tertiary); border-radius:8px; margin-top:12px;">
+          <p><strong>Tamaño original:</strong> <span id="compress-original"></span></p>
+          <p><strong>Tamaño comprimido:</strong> <span id="compress-compressed"></span></p>
+          <p><strong>Ahorro:</strong> <span id="compress-savings" style="color:var(--green); font-weight:600;"></span></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('compress-modal').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="compress-confirm">Comprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign PDF Modal -->
+  <div class="modal-overlay" id="sign-modal" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#5c6bc0;">draw</span> Firmar PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('sign-modal').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="sign-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p id="sign-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <div class="form-group">
+          <label>Dibuja tu firma:</label>
+          <canvas id="signature-canvas" width="460" height="160" style="border:2px solid var(--border); border-radius:8px; cursor:crosshair; width:100%; background:white;"></canvas>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn btn-secondary btn-sm" id="sign-clear">
+            <span class="material-icons-round">delete</span> Limpiar
+          </button>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:12px;">Color:</label>
+            <input type="color" class="input-color" id="sign-color" value="#1a237e">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size:12px;">Grosor:</label>
+            <input type="number" class="input-field" id="sign-width" value="2" min="1" max="8" style="width:60px;">
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:12px;">
+          <div class="form-group">
+            <label>Página:</label>
+            <input type="number" class="input-field" id="sign-page" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label>Pos X:</label>
+            <input type="number" class="input-field" id="sign-x" value="100">
+          </div>
+          <div class="form-group">
+            <label>Pos Y:</label>
+            <input type="number" class="input-field" id="sign-y" value="100">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('sign-modal').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="sign-confirm">Firmar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Protect PDF Modal -->
+  <div class="modal-overlay" id="protect-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#42a5f5;">shield</span> Proteger PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('protect-modal').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="protect-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p id="protect-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <div class="form-group">
+          <label>Contraseña:</label>
+          <div class="password-wrapper" style="position: relative;">
+            <input type="password" class="input-field" id="protect-password" placeholder="Escribe la contraseña..." style="padding-right: 40px;">
+            <span class="material-icons-round password-toggle" onclick="togglePasswordVisibility('protect-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-secondary); font-size: 20px;">visibility_off</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Confirmar contraseña:</label>
+          <div class="password-wrapper" style="position: relative;">
+            <input type="password" class="input-field" id="protect-password-confirm" placeholder="Repite la contraseña..." style="padding-right: 40px;">
+            <span class="material-icons-round password-toggle" onclick="togglePasswordVisibility('protect-password-confirm', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-secondary); font-size: 20px;">visibility_off</span>
+          </div>
+          <p id="password-match-error" style="color: var(--rose); font-size: 12px; margin-top: 6px; display: none; font-weight: 500;">Las contraseñas no coinciden</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('protect-modal').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="protect-confirm">Proteger</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unlock PDF Modal -->
+  <div class="modal-overlay" id="unlock-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#5c6bc0;">lock_open</span> Desbloquear PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('unlock-modal').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="unlock-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p id="unlock-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <div class="form-group">
+          <label>Contraseña del PDF:</label>
+          <div class="password-wrapper" style="position: relative;">
+            <input type="password" class="input-field" id="unlock-password" placeholder="Contraseña actual..." style="padding-right: 40px;">
+            <span class="material-icons-round password-toggle" onclick="togglePasswordVisibility('unlock-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-secondary); font-size: 20px;">visibility_off</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('unlock-modal').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="unlock-confirm">Desbloquear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crop PDF Modal -->
+  <div class="modal-overlay" id="crop-modal-tool" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#ab47bc;">crop</span> Recortar PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('crop-modal-tool').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="crop-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p id="crop-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Márgenes a recortar (en puntos PDF, 72 pts = 1 pulgada):</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Arriba:</label>
+            <input type="number" class="input-field" id="crop-top" value="20" min="0">
+          </div>
+          <div class="form-group">
+            <label>Abajo:</label>
+            <input type="number" class="input-field" id="crop-bottom" value="20" min="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Izquierda:</label>
+            <input type="number" class="input-field" id="crop-left" value="20" min="0">
+          </div>
+          <div class="form-group">
+            <label>Derecha:</label>
+            <input type="number" class="input-field" id="crop-right" value="20" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="crop-all-pages" checked>
+            Aplicar a todas las páginas
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('crop-modal-tool').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="crop-confirm-tool">Recortar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Redact PDF Modal -->
+  <div class="modal-overlay" id="redact-modal" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#78909c;">visibility_off</span> Censurar PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('redact-modal').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="redact-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p id="redact-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Define áreas a censurar en la página (coordenadas PDF en puntos):</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Página:</label>
+            <input type="number" class="input-field" id="redact-page" value="1" min="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>X:</label>
+            <input type="number" class="input-field" id="redact-x" value="50">
+          </div>
+          <div class="form-group">
+            <label>Y:</label>
+            <input type="number" class="input-field" id="redact-y" value="700">
+          </div>
+          <div class="form-group">
+            <label>Ancho:</label>
+            <input type="number" class="input-field" id="redact-w" value="200">
+          </div>
+          <div class="form-group">
+            <label>Alto:</label>
+            <input type="number" class="input-field" id="redact-h" value="20">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('redact-modal').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="redact-confirm">Censurar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Translate PDF Modal -->
+  <div class="modal-overlay" id="translate-modal" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><span class="material-icons-round" style="color:#26a69a;">translate</span> Traducir PDF</h3>
+        <button class="btn btn-ghost modal-close" onclick="document.getElementById('translate-modal').style.display='none'">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <button class="btn btn-primary" id="translate-select-file" style="width:100%;">
+            <span class="material-icons-round">folder_open</span> Seleccionar PDF
+          </button>
+          <p id="translate-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Idioma origen:</label>
+            <select class="input-field" id="translate-source">
+              <option value="es">Español</option>
+              <option value="en">Inglés</option>
+              <option value="fr">Francés</option>
+              <option value="de">Alemán</option>
+              <option value="pt">Portugués</option>
+              <option value="it">Italiano</option>
+              <option value="zh">Chino</option>
+              <option value="ja">Japonés</option>
+              <option value="ko">Coreano</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Idioma destino:</label>
+            <select class="input-field" id="translate-target">
+              <option value="en">Inglés</option>
+              <option value="es">Español</option>
+              <option value="fr">Francés</option>
+              <option value="de">Alemán</option>
+              <option value="pt">Portugués</option>
+              <option value="it">Italiano</option>
+              <option value="zh">Chino</option>
+              <option value="ja">Japonés</option>
+              <option value="ko">Coreano</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" id="translate-preview-group" style="display:none;">
+          <label>Vista previa de la traducción:</label>
+          <textarea class="input-field" id="translate-preview" rows="10" readonly style="font-size:13px;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('translate-modal').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" id="translate-confirm">Traducir y generar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Text Dialog Modal ─── -->
+  <div class="modal-overlay" id="text-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Añadir texto</h3>
+        <button class="btn btn-ghost modal-close" id="text-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Texto:</label>
+          <textarea class="input-field" id="text-input" rows="3" placeholder="Escribe tu texto..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tamaño:</label>
+            <input type="number" class="input-field" id="text-size" value="14" min="6" max="72">
+          </div>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" class="input-color" id="text-color" value="#1a1a2e">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Posición X:</label>
+            <input type="number" class="input-field" id="text-x" value="50" min="0">
+          </div>
+          <div class="form-group">
+            <label>Posición Y:</label>
+            <input type="number" class="input-field" id="text-y" value="750" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="text-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="text-modal-confirm">Añadir texto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Image Modal ─── -->
+  <div class="modal-overlay" id="image-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Añadir imagen</h3>
+        <button class="btn btn-ghost modal-close" id="image-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Seleccionar imagen:</label>
+          <button class="btn btn-secondary" id="btn-select-image" style="width:100%;">
+            <span class="material-icons-round">image</span>
+            Elegir imagen
+          </button>
+          <div id="selected-image-preview" class="image-preview-box" style="display:none; margin-top:10px;">
+            <img id="preview-image" style="max-width:100%; max-height:150px; border-radius:8px;">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ancho:</label>
+            <input type="number" class="input-field" id="image-width" value="200" min="50" max="600">
+          </div>
+          <div class="form-group">
+            <label>Alto:</label>
+            <input type="number" class="input-field" id="image-height" value="150" min="50" max="600">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Posición X:</label>
+            <input type="number" class="input-field" id="image-x" value="50" min="0">
+          </div>
+          <div class="form-group">
+            <label>Posición Y:</label>
+            <input type="number" class="input-field" id="image-y" value="500" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="image-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="image-modal-confirm">Insertar imagen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Watermark Modal ─── -->
+  <div class="modal-overlay" id="watermark-modal" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3>Añadir marca de agua</h3>
+        <button class="btn btn-ghost modal-close" id="watermark-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Texto de marca de agua:</label>
+          <input type="text" class="input-field" id="watermark-text" value="CONFIDENCIAL" placeholder="Texto de marca de agua">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tamaño de fuente:</label>
+            <input type="number" class="input-field" id="watermark-size" value="40" min="10" max="200">
+          </div>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" class="input-color" id="watermark-color" value="#808080">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Opacidad:</label>
+            <input type="range" class="input-range" id="watermark-opacity" value="30" min="10" max="100">
+            <span id="watermark-opacity-val">30%</span>
+          </div>
+          <div class="form-group">
+            <label>Rotación:</label>
+            <input type="number" class="input-field" id="watermark-rotation" value="0" min="-180" max="180">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="watermark-diagonal" checked>
+            Diagonal (45°)
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="watermark-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="watermark-modal-confirm">Aplicar marca de agua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Page Numbers Modal ─── -->
+  <div class="modal-overlay" id="pagenumbers-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Numeración de páginas</h3>
+        <button class="btn btn-ghost modal-close" id="pagenumbers-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Posición:</label>
+          <select class="input-field" id="pagenumbers-position">
+            <option value="bottom-center">Centro abajo</option>
+            <option value="bottom-right">Esquina inferior derecha</option>
+            <option value="top-center">Centro arriba</option>
+            <option value="top-right">Esquina superior derecha</option>
+            <option value="bottom-left">Esquina inferior izquierda</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tamaño de fuente:</label>
+            <input type="number" class="input-field" id="pagenumbers-size" value="10" min="6" max="24">
+          </div>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" class="input-color" id="pagenumbers-color" value="#000000">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="pagenumbers-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="pagenumbers-modal-confirm">Aplicar numeración</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Header/Footer Modal ─── -->
+  <div class="modal-overlay" id="headerfooter-modal" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3>Encabezado y Pie de página</h3>
+        <button class="btn btn-ghost modal-close" id="headerfooter-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Encabezado (texto):</label>
+          <input type="text" class="input-field" id="header-text" placeholder="Texto del encabezado">
+        </div>
+        <div class="form-group">
+          <label>Pie de página (texto):</label>
+          <input type="text" class="input-field" id="footer-text" placeholder="Texto del pie de página">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tamaño de fuente:</label>
+            <input type="number" class="input-field" id="headerfooter-size" value="10" min="6" max="24">
+          </div>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" class="input-color" id="headerfooter-color" value="#000000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Margen:</label>
+          <input type="number" class="input-field" id="headerfooter-margin" value="20" min="5" max="100">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="headerfooter-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="headerfooter-modal-confirm">Aplicar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Link Modal ─── -->
+  <div class="modal-overlay" id="link-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Añadir enlace</h3>
+        <button class="btn btn-ghost modal-close" id="link-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Texto del enlace:</label>
+          <input type="text" class="input-field" id="link-text" value="Haz clic aquí" placeholder="Texto visible">
+        </div>
+        <div class="form-group">
+          <label>URL:</label>
+          <input type="url" class="input-field" id="link-url" placeholder="https://ejemplo.com">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tamaño:</label>
+            <input type="number" class="input-field" id="link-size" value="12" min="6" max="48">
+          </div>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" class="input-color" id="link-color" value="#0066cc">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Posición X:</label>
+            <input type="number" class="input-field" id="link-x" value="50" min="0">
+          </div>
+          <div class="form-group">
+            <label>Posición Y:</label>
+            <input type="number" class="input-field" id="link-y" value="750" min="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="link-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="link-modal-confirm">Insertar enlace</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Shape Modal ─── -->
+  <div class="modal-overlay" id="shape-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Añadir forma</h3>
+        <button class="btn btn-ghost modal-close" id="shape-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tipo de forma:</label>
+          <div class="shape-selector">
+            <button class="shape-option active" data-shape="rectangle" title="Rectángulo">
+              <span class="material-icons-round">crop_square</span>
+            </button>
+            <button class="shape-option" data-shape="square" title="Cuadrado">
+              <span class="material-icons-round">square</span>
+            </button>
+            <button class="shape-option" data-shape="line" title="Línea">
+              <span class="material-icons-round">horizontal_rule</span>
+            </button>
+            <button class="shape-option" data-shape="circle" title="Círculo">
+              <span class="material-icons-round">circle</span>
+            </button>
+          </div>
+          <input type="hidden" id="shape-type" value="rectangle">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ancho:</label>
+            <input type="number" class="input-field" id="shape-width" value="150" min="10" max="600">
+          </div>
+          <div class="form-group">
+            <label>Alto:</label>
+            <input type="number" class="input-field" id="shape-height" value="100" min="10" max="600">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Posición X:</label>
+            <input type="number" class="input-field" id="shape-x" value="50" min="0">
+          </div>
+          <div class="form-group">
+            <label>Posición Y:</label>
+            <input type="number" class="input-field" id="shape-y" value="500" min="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Color de relleno:</label>
+            <input type="color" class="input-color" id="shape-color" value="#6C63FF">
+          </div>
+          <div class="form-group">
+            <label>Color de borde:</label>
+            <input type="color" class="input-color" id="shape-border-color" value="#5b52e0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Grosor de borde:</label>
+            <input type="number" class="input-field" id="shape-border-width" value="1" min="0" max="10">
+          </div>
+          <div class="form-group">
+            <label>Opacidad:</label>
+            <input type="range" class="input-range" id="shape-opacity" value="100" min="0" max="100">
+            <span id="shape-opacity-val">100%</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="shape-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="shape-modal-confirm">Insertar forma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Crop Modal ─── -->
+  <div class="modal-overlay" id="crop-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Recortar página</h3>
+        <button class="btn btn-ghost modal-close" id="crop-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>X:</label>
+            <input type="number" class="input-field" id="crop-x" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label>Y:</label>
+            <input type="number" class="input-field" id="crop-y" value="0" min="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ancho:</label>
+            <input type="number" class="input-field" id="crop-width" value="595" min="50">
+          </div>
+          <div class="form-group">
+            <label>Alto:</label>
+            <input type="number" class="input-field" id="crop-height" value="842" min="50">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="crop-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="crop-modal-confirm">Aplicar recorte</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Find & Replace Modal ─── -->
+  <div class="modal-overlay" id="find-replace-modal" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3>Buscar y Reemplazar</h3>
+        <button class="btn btn-ghost modal-close" id="find-replace-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Buscar texto:</label>
+          <input type="text" class="input-field" id="find-text" placeholder="Texto a buscar...">
+        </div>
+        <div class="form-group">
+          <label>Reemplazar con:</label>
+          <input type="text" class="input-field" id="replace-text" placeholder="Nuevo texto...">
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="case-sensitive">
+            Distinguir mayúsculas
+          </label>
+        </div>
+        <div class="replace-info" id="replace-info" style="display:none; padding:12px; background:var(--bg-tertiary); border-radius:8px; margin-top:10px;">
+          <span id="replace-count">0</span> ocurrencia(s) encontrada(s)
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="find-replace-modal-cancel">Cancelar</button>
+        <button class="btn btn-secondary" id="btn-find-count">Buscar</button>
+        <button class="btn btn-primary" id="find-replace-modal-confirm">Reemplazar todo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Extract Text Modal ─── -->
+  <div class="modal-overlay" id="extract-text-modal" style="display:none;">
+    <div class="modal modal-xl">
+      <div class="modal-header">
+        <h3>Editar Contenido de Texto</h3>
+        <button class="btn btn-ghost modal-close" id="extract-text-modal-close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Seleccionar página:</label>
+          <select class="input-field" id="extract-page-select">
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Contenido de la página:</label>
+          <textarea class="input-field text-editor-modal" id="extracted-text-content" rows="12" placeholder="El texto de la página aparecerá aquí..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tamaño de fuente:</label>
+            <input type="number" class="input-field" id="replace-font-size" value="12" min="6" max="48">
+          </div>
+          <div class="form-group">
+            <label>Color:</label>
+            <input type="color" class="input-color" id="replace-font-color" value="#000000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="replace-all-pages">
+            Aplicar a todas las páginas
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="extract-text-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="extract-text-modal-confirm">Aplicar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Toast Container ─── -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ─── Loading Overlay ─── -->
+  <div class="loading-overlay" id="loading-overlay" style="display:none;">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p id="loading-text">Procesando...</p>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="preview-modal" style="display:none; z-index: 10000; align-items:center; justify-content:center; background-color: rgba(0,0,0,0.8);">
+    <div style="position:relative; max-width: 90%; max-height: 90%; background: #ffffff; padding:10px; border-radius:8px; display:flex; flex-direction:column; align-items:center;">
+      <button id="preview-modal-close" class="btn btn-ghost" style="position:absolute; top:10px; right:10px;" title="Cerrar">
+        <span class="material-icons-round">close</span>
+      </button>
+      <img id="preview-modal-img" src="" style="max-width:100%; max-height:80vh; object-fit:contain; border: 1px solid var(--border);" />
+    </div>
+  </div>
+
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/Sortable.min.js"></script>
+  <script src="app.js"></script>
+  <script src="tools.js"></script>
+</body>
+</html>
