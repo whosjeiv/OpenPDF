@@ -18,6 +18,7 @@ const tools = {
         this.bindCropTool();
         this.bindRedactTool();
         this.bindTranslateTool();
+        this.initCustomDropdowns();
     },
 
     // ─── Tool Card Click Handlers ───
@@ -43,7 +44,16 @@ const tools = {
         document.getElementById('tool-sign').addEventListener('click', () => {
             this.state.signData = null;
             this.state.signName = '';
+            this.state.signPageNum = 0;
+            this.state.signTotalPages = 1;
+            this.state.signPdfDoc = null;
+            this.state.signPlaced = false;
+            this.state.signPosX = null;
+            this.state.signPosY = null;
             document.getElementById('sign-file-name').textContent = '';
+            document.getElementById('sign-preview').style.display = 'none';
+            document.getElementById('sign-placed-marker').style.display = 'none';
+            document.getElementById('sign-ghost').style.display = 'none';
             document.getElementById('sign-modal').style.display = 'flex';
             this.initSignatureCanvas();
         });
@@ -68,14 +78,23 @@ const tools = {
         document.getElementById('tool-redact').addEventListener('click', () => {
             this.state.redactData = null;
             this.state.redactName = '';
+            this.state.redactPageNum = 0;
+            this.state.redactTotalPages = 1;
+            this.state.redactPdfDoc = null;
+            this.state.redactAreas = [];
             document.getElementById('redact-file-name').textContent = '';
+            document.getElementById('redact-preview').style.display = 'none';
             document.getElementById('redact-modal').style.display = 'flex';
         });
 
         document.getElementById('tool-crop').addEventListener('click', () => {
             this.state.cropData = null;
             this.state.cropName = '';
+            this.state.cropPageNum = 0;
+            this.state.cropTotalPages = 1;
+            this.state.cropPdfDoc = null;
             document.getElementById('crop-file-name').textContent = '';
+            document.getElementById('crop-preview').style.display = 'none';
             document.getElementById('crop-modal-tool').style.display = 'flex';
         });
 
@@ -111,6 +130,34 @@ const tools = {
             return true;
         }
         return false;
+    },
+
+    // ─── Helper: Load PDF.js document from base64 ───
+    async loadPdfDocument(base64Data) {
+        const pdfData = atob(base64Data);
+        const uint8Array = new Uint8Array(pdfData.length);
+        for (let i = 0; i < pdfData.length; i++) {
+            uint8Array[i] = pdfData.charCodeAt(i);
+        }
+        return await window.pdfjsLib.getDocument({ data: uint8Array }).promise;
+    },
+
+    // ─── Helper: Render a PDF page to a canvas ───
+    async renderPageToCanvas(pdfDoc, pageNum, canvas, maxWidth = 500) {
+        const page = await pdfDoc.getPage(pageNum + 1);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const scale = maxWidth / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+
+        await page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport: scaledViewport
+        }).promise;
+
+        return { scale, pdfWidth: viewport.width, pdfHeight: viewport.height };
     },
 
     // ═══════════════════════════════════════════════════
@@ -271,7 +318,7 @@ const tools = {
     },
 
     // ═══════════════════════════════════════════════════
-    // SIGN PDF
+    // SIGN PDF - Visual Preview
     // ═══════════════════════════════════════════════════
     signatureCtx: null,
     isDrawing: false,
@@ -324,6 +371,21 @@ const tools = {
         newCanvas.addEventListener('mouseleave', () => { this.isDrawing = false; });
     },
 
+    async renderSignPreview() {
+        if (!this.state.signPdfDoc) return;
+        const canvas = document.getElementById('sign-preview-canvas');
+        const info = await this.renderPageToCanvas(this.state.signPdfDoc, this.state.signPageNum, canvas);
+        this.state.signScale = info.scale;
+        this.state.signPdfWidth = info.pdfWidth;
+        this.state.signPdfHeight = info.pdfHeight;
+        document.getElementById('sign-page-label').textContent =
+            `Página ${this.state.signPageNum + 1} de ${this.state.signTotalPages}`;
+
+        // Clear placed marker on page change
+        document.getElementById('sign-placed-marker').style.display = 'none';
+        this.state.signPlaced = false;
+    },
+
     bindSignTool() {
         document.getElementById('sign-select-file').addEventListener('click', async () => {
             const file = await this.selectPdfFile();
@@ -331,7 +393,96 @@ const tools = {
                 this.state.signData = file.data;
                 this.state.signName = file.name;
                 document.getElementById('sign-file-name').textContent = `📄 ${file.name}`;
+
+                try {
+                    this.state.signPdfDoc = await this.loadPdfDocument(file.data);
+                    this.state.signTotalPages = this.state.signPdfDoc.numPages;
+                    this.state.signPageNum = 0;
+                    document.getElementById('sign-preview').style.display = 'block';
+                    await this.renderSignPreview();
+                } catch (e) {
+                    showToast('Error al cargar vista previa', 'error');
+                }
             }
+        });
+
+        // Page navigation
+        document.getElementById('sign-prev-page').addEventListener('click', async () => {
+            if (this.state.signPageNum > 0) {
+                this.state.signPageNum--;
+                await this.renderSignPreview();
+            }
+        });
+        document.getElementById('sign-next-page').addEventListener('click', async () => {
+            if (this.state.signPageNum < this.state.signTotalPages - 1) {
+                this.state.signPageNum++;
+                await this.renderSignPreview();
+            }
+        });
+
+        // Click to place signature on canvas area
+        const canvasArea = document.getElementById('sign-canvas-area');
+        canvasArea.addEventListener('mousemove', (e) => {
+            if (!this.state.signPdfDoc) return;
+            const ghost = document.getElementById('sign-ghost');
+            const canvas = document.getElementById('sign-preview-canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const sigSize = parseInt(document.getElementById('sign-size-slider').value) || 200;
+            const displayW = sigSize * (this.state.signScale || 0.5);
+            const displayH = displayW * 0.4;
+
+            const relX = e.clientX - canvasRect.left;
+            const relY = e.clientY - canvasRect.top;
+
+            // Check if within canvas bounds
+            if (relX >= 0 && relY >= 0 && relX <= canvasRect.width && relY <= canvasRect.height) {
+                ghost.style.display = 'block';
+                ghost.style.left = (canvas.offsetLeft + relX - displayW / 2) + 'px';
+                ghost.style.top = (canvas.offsetTop + relY - displayH / 2) + 'px';
+                ghost.style.width = displayW + 'px';
+                ghost.style.height = displayH + 'px';
+            } else {
+                ghost.style.display = 'none';
+            }
+        });
+
+        canvasArea.addEventListener('mouseleave', () => {
+            document.getElementById('sign-ghost').style.display = 'none';
+        });
+
+        canvasArea.addEventListener('click', (e) => {
+            if (!this.state.signPdfDoc) return;
+            const canvas = document.getElementById('sign-preview-canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const relX = e.clientX - canvasRect.left;
+            const relY = e.clientY - canvasRect.top;
+
+            if (relX < 0 || relY < 0 || relX > canvasRect.width || relY > canvasRect.height) return;
+
+            const scale = this.state.signScale || 1;
+            const sigSize = parseInt(document.getElementById('sign-size-slider').value) || 200;
+            const displayW = sigSize * scale;
+            const displayH = displayW * 0.4;
+
+            // Convert to PDF coordinates (origin bottom-left)
+            this.state.signPosX = (relX / canvasRect.width) * this.state.signPdfWidth;
+            this.state.signPosY = this.state.signPdfHeight - ((relY / canvasRect.height) * this.state.signPdfHeight);
+            this.state.signPlaced = true;
+
+            // Show placed marker
+            const marker = document.getElementById('sign-placed-marker');
+            marker.style.display = 'block';
+            marker.style.left = (canvas.offsetLeft + relX - displayW / 2) + 'px';
+            marker.style.top = (canvas.offsetTop + relY - displayH / 2) + 'px';
+            marker.style.width = displayW + 'px';
+            marker.style.height = displayH + 'px';
+
+            showToast('Posición de firma establecida ✓', 'success');
+        });
+
+        // Size slider
+        document.getElementById('sign-size-slider').addEventListener('input', (e) => {
+            document.getElementById('sign-size-val').textContent = e.target.value + 'px';
         });
 
         document.getElementById('sign-clear').addEventListener('click', () => {
@@ -349,21 +500,28 @@ const tools = {
                 return;
             }
 
+            if (!this.state.signPlaced) {
+                showToast('Haz clic en el PDF para posicionar la firma', 'error');
+                return;
+            }
+
             const canvas = document.getElementById('signature-canvas');
-            // Get signature as PNG base64
             const dataUrl = canvas.toDataURL('image/png');
             const signatureBase64 = dataUrl.split(',')[1];
 
-            const pageNum = parseInt(document.getElementById('sign-page').value) || 1;
-            const x = parseInt(document.getElementById('sign-x').value) || 100;
-            const y = parseInt(document.getElementById('sign-y').value) || 100;
+            const sigSize = parseInt(document.getElementById('sign-size-slider').value) || 200;
+            const sigW = sigSize;
+            const sigH = sigSize * 0.4;
 
             showLoading('Firmando PDF...');
 
             try {
                 const result = await window.api.signPdf(
-                    this.state.signData, pageNum - 1,
-                    signatureBase64, x, y, 200, 80
+                    this.state.signData, this.state.signPageNum,
+                    signatureBase64,
+                    this.state.signPosX - sigW / 2,
+                    this.state.signPosY - sigH / 2,
+                    sigW, sigH
                 );
                 if (result.success) {
                     const saved = await this.savePdfData(result.data, `${this.state.signName.replace('.pdf', '')}_firmado.pdf`);
@@ -499,8 +657,68 @@ const tools = {
     },
 
     // ═══════════════════════════════════════════════════
-    // CROP PDF
+    // CROP PDF - Visual Preview with Sliders
     // ═══════════════════════════════════════════════════
+    async renderCropPreview() {
+        if (!this.state.cropPdfDoc) return;
+        const canvas = document.getElementById('crop-preview-canvas');
+        const info = await this.renderPageToCanvas(this.state.cropPdfDoc, this.state.cropPageNum, canvas);
+        this.state.cropScale = info.scale;
+        this.state.cropPdfWidth = info.pdfWidth;
+        this.state.cropPdfHeight = info.pdfHeight;
+        document.getElementById('crop-page-label').textContent =
+            `Página ${this.state.cropPageNum + 1} de ${this.state.cropTotalPages}`;
+        this.updateCropOverlay();
+    },
+
+    updateCropOverlay() {
+        const canvas = document.getElementById('crop-preview-canvas');
+        if (!canvas || !this.state.cropScale) return;
+
+        const scale = this.state.cropScale;
+        const canvasW = canvas.width;
+        const canvasH = canvas.height;
+
+        const top = (parseInt(document.getElementById('crop-top').value) || 0) * scale;
+        const bottom = (parseInt(document.getElementById('crop-bottom').value) || 0) * scale;
+        const left = (parseInt(document.getElementById('crop-left').value) || 0) * scale;
+        const right = (parseInt(document.getElementById('crop-right').value) || 0) * scale;
+
+        // Position overlay relative to canvas within the area
+        const overlay = document.getElementById('crop-overlay');
+        overlay.style.left = canvas.offsetLeft + 'px';
+        overlay.style.top = canvas.offsetTop + 'px';
+        overlay.style.width = canvasW + 'px';
+        overlay.style.height = canvasH + 'px';
+
+        // Shades
+        document.getElementById('crop-shade-top').style.height = top + 'px';
+        document.getElementById('crop-shade-bottom').style.height = bottom + 'px';
+
+        const shadeLeft = document.getElementById('crop-shade-left');
+        shadeLeft.style.top = top + 'px';
+        shadeLeft.style.height = (canvasH - top - bottom) + 'px';
+        shadeLeft.style.width = left + 'px';
+
+        const shadeRight = document.getElementById('crop-shade-right');
+        shadeRight.style.top = top + 'px';
+        shadeRight.style.height = (canvasH - top - bottom) + 'px';
+        shadeRight.style.width = right + 'px';
+
+        // Active area
+        const active = document.getElementById('crop-active-area');
+        active.style.top = top + 'px';
+        active.style.left = left + 'px';
+        active.style.width = Math.max(0, canvasW - left - right) + 'px';
+        active.style.height = Math.max(0, canvasH - top - bottom) + 'px';
+
+        // Update labels
+        document.getElementById('crop-top-val').textContent = document.getElementById('crop-top').value + ' pts';
+        document.getElementById('crop-bottom-val').textContent = document.getElementById('crop-bottom').value + ' pts';
+        document.getElementById('crop-left-val').textContent = document.getElementById('crop-left').value + ' pts';
+        document.getElementById('crop-right-val').textContent = document.getElementById('crop-right').value + ' pts';
+    },
+
     bindCropTool() {
         document.getElementById('crop-select-file').addEventListener('click', async () => {
             const file = await this.selectPdfFile();
@@ -508,7 +726,36 @@ const tools = {
                 this.state.cropData = file.data;
                 this.state.cropName = file.name;
                 document.getElementById('crop-file-name').textContent = `📄 ${file.name}`;
+
+                try {
+                    this.state.cropPdfDoc = await this.loadPdfDocument(file.data);
+                    this.state.cropTotalPages = this.state.cropPdfDoc.numPages;
+                    this.state.cropPageNum = 0;
+                    document.getElementById('crop-preview').style.display = 'block';
+                    await this.renderCropPreview();
+                } catch (e) {
+                    showToast('Error al cargar vista previa', 'error');
+                }
             }
+        });
+
+        // Page navigation
+        document.getElementById('crop-prev-page').addEventListener('click', async () => {
+            if (this.state.cropPageNum > 0) {
+                this.state.cropPageNum--;
+                await this.renderCropPreview();
+            }
+        });
+        document.getElementById('crop-next-page').addEventListener('click', async () => {
+            if (this.state.cropPageNum < this.state.cropTotalPages - 1) {
+                this.state.cropPageNum++;
+                await this.renderCropPreview();
+            }
+        });
+
+        // Slider listeners for live crop overlay update
+        ['crop-top', 'crop-bottom', 'crop-left', 'crop-right'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => this.updateCropOverlay());
         });
 
         document.getElementById('crop-confirm-tool').addEventListener('click', async () => {
@@ -548,15 +795,228 @@ const tools = {
     },
 
     // ═══════════════════════════════════════════════════
-    // REDACT PDF (Censor)
+    // REDACT PDF (Censor) - Visual Drawing
     // ═══════════════════════════════════════════════════
+    redactDrawing: false,
+    redactStartX: 0,
+    redactStartY: 0,
+
+    async renderRedactPreview() {
+        if (!this.state.redactPdfDoc) return;
+        const canvas = document.getElementById('redact-preview-canvas');
+        const info = await this.renderPageToCanvas(this.state.redactPdfDoc, this.state.redactPageNum, canvas);
+        this.state.redactScale = info.scale;
+        this.state.redactPdfWidth = info.pdfWidth;
+        this.state.redactPdfHeight = info.pdfHeight;
+        document.getElementById('redact-page-label').textContent =
+            `Página ${this.state.redactPageNum + 1} de ${this.state.redactTotalPages}`;
+        this.renderRedactRects();
+    },
+
+    renderRedactRects() {
+        const layer = document.getElementById('redact-rects-layer');
+        const canvas = document.getElementById('redact-preview-canvas');
+        const listEl = document.getElementById('redact-areas-list');
+
+        // Position layer over canvas
+        layer.style.left = canvas.offsetLeft + 'px';
+        layer.style.top = canvas.offsetTop + 'px';
+        layer.style.width = canvas.width + 'px';
+        layer.style.height = canvas.height + 'px';
+
+        // Clear existing visual rects
+        layer.querySelectorAll('.redact-rect-visual').forEach(el => el.remove());
+
+        // Filter areas for current page
+        const pageAreas = this.state.redactAreas.filter(a => a.page === this.state.redactPageNum);
+        const scale = this.state.redactScale || 1;
+
+        pageAreas.forEach((area, idx) => {
+            const rect = document.createElement('div');
+            rect.className = 'redact-rect-visual';
+            rect.style.left = (area.x * scale) + 'px';
+            rect.style.top = ((this.state.redactPdfHeight - area.y - area.height) * scale) + 'px';
+            rect.style.width = (area.width * scale) + 'px';
+            rect.style.height = (area.height * scale) + 'px';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'redact-rect-delete';
+            deleteBtn.innerHTML = '✕';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const globalIdx = this.state.redactAreas.indexOf(area);
+                if (globalIdx !== -1) {
+                    this.state.redactAreas.splice(globalIdx, 1);
+                    this.renderRedactRects();
+                    this.updateRedactChips();
+                }
+            });
+            rect.appendChild(deleteBtn);
+            layer.appendChild(rect);
+        });
+
+        this.updateRedactChips();
+    },
+
+    updateRedactChips() {
+        const listEl = document.getElementById('redact-areas-list');
+        const emptyMsg = document.getElementById('redact-areas-empty');
+
+        // Remove old chips
+        listEl.querySelectorAll('.redact-area-chip').forEach(el => el.remove());
+
+        if (this.state.redactAreas.length === 0) {
+            emptyMsg.style.display = 'flex';
+            return;
+        }
+
+        emptyMsg.style.display = 'none';
+
+        this.state.redactAreas.forEach((area, idx) => {
+            const chip = document.createElement('span');
+            chip.className = 'redact-area-chip';
+            chip.innerHTML = `
+                P${area.page + 1}: ${Math.round(area.width)}×${Math.round(area.height)}
+                <button onclick="tools.removeRedactArea(${idx})" title="Eliminar">
+                    <span class="material-icons-round">close</span>
+                </button>
+            `;
+            listEl.appendChild(chip);
+        });
+    },
+
+    removeRedactArea(idx) {
+        this.state.redactAreas.splice(idx, 1);
+        this.renderRedactRects();
+        this.updateRedactChips();
+    },
+
     bindRedactTool() {
         document.getElementById('redact-select-file').addEventListener('click', async () => {
             const file = await this.selectPdfFile();
             if (file) {
                 this.state.redactData = file.data;
                 this.state.redactName = file.name;
+                this.state.redactAreas = [];
                 document.getElementById('redact-file-name').textContent = `📄 ${file.name}`;
+
+                try {
+                    this.state.redactPdfDoc = await this.loadPdfDocument(file.data);
+                    this.state.redactTotalPages = this.state.redactPdfDoc.numPages;
+                    this.state.redactPageNum = 0;
+                    document.getElementById('redact-preview').style.display = 'block';
+                    await this.renderRedactPreview();
+                } catch (e) {
+                    showToast('Error al cargar vista previa', 'error');
+                }
+            }
+        });
+
+        // Page navigation
+        document.getElementById('redact-prev-page').addEventListener('click', async () => {
+            if (this.state.redactPageNum > 0) {
+                this.state.redactPageNum--;
+                await this.renderRedactPreview();
+            }
+        });
+        document.getElementById('redact-next-page').addEventListener('click', async () => {
+            if (this.state.redactPageNum < this.state.redactTotalPages - 1) {
+                this.state.redactPageNum++;
+                await this.renderRedactPreview();
+            }
+        });
+
+        // Drawing rectangles on canvas area
+        const canvasArea = document.getElementById('redact-canvas-area');
+        let drawingRect = null;
+
+        canvasArea.addEventListener('mousedown', (e) => {
+            if (!this.state.redactPdfDoc) return;
+            const canvas = document.getElementById('redact-preview-canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const relX = e.clientX - canvasRect.left;
+            const relY = e.clientY - canvasRect.top;
+
+            if (relX < 0 || relY < 0 || relX > canvasRect.width || relY > canvasRect.height) return;
+
+            this.redactDrawing = true;
+            this.redactStartX = relX;
+            this.redactStartY = relY;
+
+            // Create visual drawing rect
+            drawingRect = document.createElement('div');
+            drawingRect.className = 'redact-drawing-rect';
+            drawingRect.style.left = (canvas.offsetLeft + relX) + 'px';
+            drawingRect.style.top = (canvas.offsetTop + relY) + 'px';
+            drawingRect.style.width = '0px';
+            drawingRect.style.height = '0px';
+            canvasArea.appendChild(drawingRect);
+        });
+
+        canvasArea.addEventListener('mousemove', (e) => {
+            if (!this.redactDrawing || !drawingRect) return;
+            const canvas = document.getElementById('redact-preview-canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const relX = Math.max(0, Math.min(e.clientX - canvasRect.left, canvasRect.width));
+            const relY = Math.max(0, Math.min(e.clientY - canvasRect.top, canvasRect.height));
+
+            const x = Math.min(this.redactStartX, relX);
+            const y = Math.min(this.redactStartY, relY);
+            const w = Math.abs(relX - this.redactStartX);
+            const h = Math.abs(relY - this.redactStartY);
+
+            drawingRect.style.left = (canvas.offsetLeft + x) + 'px';
+            drawingRect.style.top = (canvas.offsetTop + y) + 'px';
+            drawingRect.style.width = w + 'px';
+            drawingRect.style.height = h + 'px';
+        });
+
+        const finishDrawing = (e) => {
+            if (!this.redactDrawing || !drawingRect) return;
+            this.redactDrawing = false;
+
+            const canvas = document.getElementById('redact-preview-canvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const relX = Math.max(0, Math.min(e.clientX - canvasRect.left, canvasRect.width));
+            const relY = Math.max(0, Math.min(e.clientY - canvasRect.top, canvasRect.height));
+
+            const x1 = Math.min(this.redactStartX, relX);
+            const y1 = Math.min(this.redactStartY, relY);
+            const w = Math.abs(relX - this.redactStartX);
+            const h = Math.abs(relY - this.redactStartY);
+
+            drawingRect.remove();
+            drawingRect = null;
+
+            // Only add if reasonably sized (>5px both dimensions)
+            if (w < 5 || h < 5) return;
+
+            const scale = this.state.redactScale || 1;
+            const canvasDisplayW = canvasRect.width;
+            const canvasDisplayH = canvasRect.height;
+
+            // Convert display coords to PDF coords
+            const pdfX = (x1 / canvasDisplayW) * this.state.redactPdfWidth;
+            const pdfW = (w / canvasDisplayW) * this.state.redactPdfWidth;
+            const pdfH = (h / canvasDisplayH) * this.state.redactPdfHeight;
+            const pdfY = this.state.redactPdfHeight - ((y1 / canvasDisplayH) * this.state.redactPdfHeight) - pdfH;
+
+            this.state.redactAreas.push({
+                page: this.state.redactPageNum,
+                x: pdfX,
+                y: pdfY,
+                width: pdfW,
+                height: pdfH
+            });
+
+            this.renderRedactRects();
+            showToast(`Área ${this.state.redactAreas.length} marcada para censura`, 'info');
+        };
+
+        canvasArea.addEventListener('mouseup', finishDrawing);
+        canvasArea.addEventListener('mouseleave', (e) => {
+            if (this.redactDrawing && drawingRect) {
+                finishDrawing(e);
             }
         });
 
@@ -566,29 +1026,42 @@ const tools = {
                 return;
             }
 
-            const pageNum = parseInt(document.getElementById('redact-page').value) || 1;
-            const area = {
-                x: parseInt(document.getElementById('redact-x').value) || 0,
-                y: parseInt(document.getElementById('redact-y').value) || 0,
-                width: parseInt(document.getElementById('redact-w').value) || 100,
-                height: parseInt(document.getElementById('redact-h').value) || 20,
-            };
+            if (this.state.redactAreas.length === 0) {
+                showToast('Dibuja al menos un área para censurar', 'error');
+                return;
+            }
 
             showLoading('Censurando PDF...');
 
             try {
-                const result = await window.api.redactPdf(this.state.redactData, pageNum - 1, [area]);
-                if (result.success) {
-                    // Allow multiple redactions - update stored data
-                    this.state.redactData = result.data;
+                let currentData = this.state.redactData;
 
-                    const saved = await this.savePdfData(result.data, `${this.state.redactName.replace('.pdf', '')}_censurado.pdf`);
-                    if (saved) {
-                        showToast('Área censurada exitosamente', 'success');
-                        document.getElementById('redact-modal').style.display = 'none';
+                // Group areas by page
+                const pageGroups = {};
+                for (const area of this.state.redactAreas) {
+                    if (!pageGroups[area.page]) pageGroups[area.page] = [];
+                    pageGroups[area.page].push({
+                        x: area.x,
+                        y: area.y,
+                        width: area.width,
+                        height: area.height
+                    });
+                }
+
+                // Apply redactions page by page
+                for (const [pageNum, areas] of Object.entries(pageGroups)) {
+                    const result = await window.api.redactPdf(currentData, parseInt(pageNum), areas);
+                    if (result.success) {
+                        currentData = result.data;
+                    } else {
+                        showToast(`Error en página ${parseInt(pageNum) + 1}: ${result.error}`, 'error');
                     }
-                } else {
-                    showToast(`Error: ${result.error}`, 'error');
+                }
+
+                const saved = await this.savePdfData(currentData, `${this.state.redactName.replace('.pdf', '')}_censurado.pdf`);
+                if (saved) {
+                    showToast('PDF censurado exitosamente', 'success');
+                    document.getElementById('redact-modal').style.display = 'none';
                 }
             } catch (err) {
                 showToast(`Error: ${err.message}`, 'error');
@@ -599,8 +1072,82 @@ const tools = {
     },
 
     // ═══════════════════════════════════════════════════
-    // TRANSLATE PDF
+    // TRANSLATE PDF - Custom Dropdowns with Flags
     // ═══════════════════════════════════════════════════
+    initCustomDropdowns() {
+        // Initialize all custom dropdowns
+        document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+            const trigger = dropdown.querySelector('.custom-dropdown-trigger');
+            const menu = dropdown.querySelector('.custom-dropdown-menu');
+            const items = dropdown.querySelectorAll('.custom-dropdown-item');
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Close other open dropdowns
+                document.querySelectorAll('.custom-dropdown.open').forEach(d => {
+                    if (d !== dropdown) d.classList.remove('open');
+                });
+                dropdown.classList.toggle('open');
+            });
+
+            items.forEach(item => {
+                item.addEventListener('click', () => {
+                    const value = item.dataset.value;
+                    const flag = item.dataset.flag;
+                    const label = item.textContent.trim().replace(flag, '').trim();
+
+                    dropdown.dataset.value = value;
+                    trigger.querySelector('.dropdown-flag').textContent = flag;
+                    trigger.querySelector('.dropdown-label').textContent = label;
+
+                    // Update active state
+                    items.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+
+                    dropdown.classList.remove('open');
+                });
+            });
+        });
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-dropdown.open').forEach(d => d.classList.remove('open'));
+        });
+
+        // Swap button
+        document.getElementById('translate-swap')?.addEventListener('click', () => {
+            const sourceDD = document.getElementById('translate-source-dropdown');
+            const targetDD = document.getElementById('translate-target-dropdown');
+
+            const sourceValue = sourceDD.dataset.value;
+            const targetValue = targetDD.dataset.value;
+
+            const sourceFlag = sourceDD.querySelector('.dropdown-flag').textContent;
+            const targetFlag = targetDD.querySelector('.dropdown-flag').textContent;
+
+            const sourceLabel = sourceDD.querySelector('.dropdown-label').textContent;
+            const targetLabel = targetDD.querySelector('.dropdown-label').textContent;
+
+            // Swap values
+            sourceDD.dataset.value = targetValue;
+            targetDD.dataset.value = sourceValue;
+
+            sourceDD.querySelector('.dropdown-flag').textContent = targetFlag;
+            targetDD.querySelector('.dropdown-flag').textContent = sourceFlag;
+
+            sourceDD.querySelector('.dropdown-label').textContent = targetLabel;
+            targetDD.querySelector('.dropdown-label').textContent = sourceLabel;
+
+            // Update active states
+            sourceDD.querySelectorAll('.custom-dropdown-item').forEach(i => {
+                i.classList.toggle('active', i.dataset.value === targetValue);
+            });
+            targetDD.querySelectorAll('.custom-dropdown-item').forEach(i => {
+                i.classList.toggle('active', i.dataset.value === sourceValue);
+            });
+        });
+    },
+
     bindTranslateTool() {
         document.getElementById('translate-select-file').addEventListener('click', async () => {
             const file = await this.selectPdfFile();
@@ -618,8 +1165,8 @@ const tools = {
                 return;
             }
 
-            const sourceLang = document.getElementById('translate-source').value;
-            const targetLang = document.getElementById('translate-target').value;
+            const sourceLang = document.getElementById('translate-source-dropdown').dataset.value;
+            const targetLang = document.getElementById('translate-target-dropdown').dataset.value;
 
             if (sourceLang === targetLang) {
                 showToast('Los idiomas de origen y destino deben ser diferentes', 'error');
@@ -681,7 +1228,6 @@ const tools = {
 
                 for (const paragraph of paragraphs) {
                     if (paragraph.trim() === '--- Página ---') {
-                        // Add new page for each original page break
                         const addResult = await window.api.addPageToPdf(currentData);
                         if (addResult.success) {
                             currentData = addResult.data;
@@ -703,7 +1249,7 @@ const tools = {
                     if (paragraph.trim()) {
                         const textResult = await window.api.addTextToPdf(
                             currentData, currentPage,
-                            paragraph.trim().substring(0, 200), // Limit line length
+                            paragraph.trim().substring(0, 200),
                             30, yPos, fontSize, '#000000'
                         );
                         if (textResult.success) {

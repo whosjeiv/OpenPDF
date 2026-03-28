@@ -10,6 +10,10 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 </head>
 <body>
+  <!-- Progress Bar -->
+  <div class="progress-container" id="progress-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
   <!-- ─── Title Bar ─── -->
   <div class="titlebar" id="titlebar">
     <div class="titlebar-left">
@@ -19,6 +23,10 @@
       <span class="titlebar-title">OpenPDF</span>
     </div>
     <div class="titlebar-controls">
+      <button class="theme-toggle" id="btn-theme-toggle" title="Cambiar tema">
+        <span class="material-icons-round icon-dark" style="font-size:18px;">dark_mode</span>
+        <span class="material-icons-round icon-light" style="font-size:18px;">light_mode</span>
+      </button>
       <button class="titlebar-btn" id="btn-minimize" title="Minimizar">
         <svg width="12" height="12" viewBox="0 0 12 12"><rect y="5" width="12" height="2" rx="1" fill="currentColor"/></svg>
       </button>
@@ -115,6 +123,15 @@
               <p>Reordena páginas</p>
             </div>
           </div>
+          <!-- Recent Files -->
+          <div class="recent-files-section" id="recent-files-section">
+            <div class="recent-files-header">
+              <span class="material-icons-round">schedule</span> Archivos recientes
+            </div>
+            <div class="recent-files-list" id="recent-files-list">
+              <p class="recent-files-empty" id="recent-files-empty">No hay archivos recientes</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -146,8 +163,8 @@
           <div class="file-list" id="convert-file-list"></div>
           <div class="action-bar" id="convert-actions" style="display:none; justify-content: space-between; align-items: center;">
             <label class="merge-toggle-container" style="display: flex; align-items: center; gap: 14px; cursor: pointer; padding: 10px 18px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); transition: all 0.3s ease; box-shadow: var(--shadow-sm); user-select: none;">
-              <div class="merge-toggle-logo" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: transparent; transition: transform 0.3s ease;">
-                <img src="logo.png" width="28" height="28" alt="OpenPDF Logo" style="object-fit: contain; filter: drop-shadow(0 2px 4px rgba(108, 99, 255, 0.2));">
+              <div class="merge-toggle-logo" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--accent-light); border-radius: var(--radius-sm); transition: transform 0.3s ease;">
+                <span class="material-icons-round" style="font-size: 24px; color: var(--accent);">library_add</span>
               </div>
               <div style="display: flex; flex-direction: column; margin-right: 16px;">
                 <span style="font-size: 14.5px; font-weight: 600; color: var(--text-primary); line-height: 1.2;">Unir en un solo PDF</span>
@@ -252,11 +269,28 @@
                 <button class="toolbar-btn" id="btn-edit-new" title="Nuevo PDF">
                   <span class="material-icons-round">note_add</span>
                 </button>
-                <button class="toolbar-btn" id="btn-edit-save" title="Guardar">
+                <button class="toolbar-btn" id="btn-edit-save" title="Guardar (Ctrl+S)">
                   <span class="material-icons-round">save</span>
                 </button>
                 <button class="toolbar-btn" id="btn-edit-save-as" title="Guardar como">
                   <span class="material-icons-round">save_as</span>
+                </button>
+                <button class="toolbar-btn" id="btn-edit-print" title="Imprimir (Ctrl+P)">
+                  <span class="material-icons-round">print</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="toolbar-divider"></div>
+            
+            <div class="toolbar-section">
+              <span class="toolbar-section-title">Historial</span>
+              <div class="toolbar-buttons">
+                <button class="toolbar-btn disabled" id="btn-undo" title="Deshacer (Ctrl+Z)">
+                  <span class="material-icons-round">undo</span>
+                </button>
+                <button class="toolbar-btn disabled" id="btn-redo" title="Rehacer (Ctrl+Y)">
+                  <span class="material-icons-round">redo</span>
                 </button>
               </div>
             </div>
@@ -300,6 +334,20 @@
                 </button>
                 <button class="toolbar-btn" id="btn-add-shape" title="Añadir forma">
                   <span class="material-icons-round">category</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="toolbar-divider"></div>
+            
+            <div class="toolbar-section">
+              <span class="toolbar-section-title">Anotar</span>
+              <div class="toolbar-buttons">
+                <button class="toolbar-btn" id="btn-freehand-draw" title="Dibujo libre">
+                  <span class="material-icons-round">gesture</span>
+                </button>
+                <button class="toolbar-btn" id="btn-add-annotation" title="Nota adhesiva">
+                  <span class="material-icons-round">sticky_note_2</span>
                 </button>
               </div>
             </div>
@@ -363,7 +411,34 @@
             <div class="editor-canvas-container">
               <div class="editor-canvas" id="editor-canvas">
                 <canvas id="pdf-render-canvas"></canvas>
+                <canvas class="drawing-canvas-overlay" id="drawing-canvas"></canvas>
+                <div class="annotation-layer" id="annotation-layer"></div>
                 <div class="editor-overlay" id="editor-overlay"></div>
+              </div>
+              <!-- Drawing Toolbar (hidden by default) -->
+              <div class="drawing-toolbar" id="drawing-toolbar" style="display:none;">
+                <div class="draw-option">
+                  <span class="material-icons-round" style="font-size:14px;">palette</span>
+                  <input type="color" id="draw-color" value="#e53935">
+                </div>
+                <div class="draw-option">
+                  <span class="material-icons-round" style="font-size:14px;">line_weight</span>
+                  <input type="range" id="draw-width" min="1" max="10" value="3">
+                </div>
+                <button class="btn btn-ghost btn-sm" id="draw-clear" title="Limpiar dibujo">
+                  <span class="material-icons-round" style="font-size:16px;">delete_outline</span>
+                </button>
+                <button class="btn btn-primary btn-sm" id="draw-apply" title="Aplicar al PDF">
+                  <span class="material-icons-round" style="font-size:16px;">check</span>
+                </button>
+                <button class="btn btn-ghost btn-sm" id="draw-cancel" title="Cancelar">
+                  <span class="material-icons-round" style="font-size:16px;">close</span>
+                </button>
+              </div>
+              <!-- Mode Indicator -->
+              <div class="editor-mode-indicator" id="editor-mode-indicator">
+                <span class="material-icons-round">gesture</span>
+                <span id="mode-indicator-text">Modo dibujo</span>
               </div>
             </div>
             
@@ -387,6 +462,22 @@
                   <div class="property-row">
                     <span>Nombre:</span>
                     <span class="property-value" id="filename-display" style="font-size:11px;">Sin título</span>
+                  </div>
+                </div>
+                <!-- PDF Stats Dashboard -->
+                <div class="stats-section" id="pdf-stats-section">
+                  <div class="stats-section-title">Estadísticas</div>
+                  <div class="stat-row">
+                    <span class="stat-label"><span class="material-icons-round">straighten</span> Tamaño</span>
+                    <span class="stat-value" id="stat-file-size">—</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-label"><span class="material-icons-round">aspect_ratio</span> Dimensiones</span>
+                    <span class="stat-value" id="stat-page-dims">—</span>
+                  </div>
+                  <div class="stat-row">
+                    <span class="stat-label"><span class="material-icons-round">history</span> Cambios</span>
+                    <span class="stat-value" id="stat-changes"><span class="stat-badge green">0</span></span>
                   </div>
                 </div>
               </div>
@@ -658,7 +749,7 @@
 
   <!-- Sign PDF Modal -->
   <div class="modal-overlay" id="sign-modal" style="display:none;">
-    <div class="modal modal-lg">
+    <div class="modal modal-visual">
       <div class="modal-header">
         <h3><span class="material-icons-round" style="color:#5c6bc0;">draw</span> Firmar PDF</h3>
         <button class="btn btn-ghost modal-close" onclick="document.getElementById('sign-modal').style.display='none'">
@@ -666,17 +757,43 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
+        <div class="form-group" id="sign-upload-group">
           <button class="btn btn-primary" id="sign-select-file" style="width:100%;">
             <span class="material-icons-round">folder_open</span> Seleccionar PDF
           </button>
           <p id="sign-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
         </div>
-        <div class="form-group">
+
+        <!-- Visual PDF Preview -->
+        <div class="visual-preview" id="sign-preview" style="display:none;">
+          <div class="preview-toolbar">
+            <div class="preview-page-nav">
+              <button class="btn btn-ghost btn-sm" id="sign-prev-page"><span class="material-icons-round">chevron_left</span></button>
+              <span class="preview-page-label" id="sign-page-label">Página 1 de 1</span>
+              <button class="btn btn-ghost btn-sm" id="sign-next-page"><span class="material-icons-round">chevron_right</span></button>
+            </div>
+            <div class="preview-hint-badge">
+              <span class="material-icons-round">touch_app</span> Clic para posicionar firma
+            </div>
+          </div>
+          <div class="preview-canvas-area" id="sign-canvas-area">
+            <canvas id="sign-preview-canvas"></canvas>
+            <div class="sign-ghost" id="sign-ghost" style="display:none;"></div>
+            <div class="sign-placed-marker" id="sign-placed-marker" style="display:none;"></div>
+          </div>
+          <div class="sign-size-control">
+            <label><span class="material-icons-round" style="font-size:16px; color:var(--accent);">photo_size_select_large</span> Tamaño firma:</label>
+            <input type="range" class="input-range" id="sign-size-slider" value="200" min="80" max="400">
+            <span id="sign-size-val">200px</span>
+          </div>
+        </div>
+
+        <!-- Signature Drawing Area -->
+        <div class="form-group" style="margin-top:4px;">
           <label>Dibuja tu firma:</label>
           <canvas id="signature-canvas" width="460" height="160" style="border:2px solid var(--border); border-radius:8px; cursor:crosshair; width:100%; background:white;"></canvas>
         </div>
-        <div style="display:flex; gap:8px; margin-top:8px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <button class="btn btn-secondary btn-sm" id="sign-clear">
             <span class="material-icons-round">delete</span> Limpiar
           </button>
@@ -687,20 +804,6 @@
           <div class="form-group" style="margin:0;">
             <label style="font-size:12px;">Grosor:</label>
             <input type="number" class="input-field" id="sign-width" value="2" min="1" max="8" style="width:60px;">
-          </div>
-        </div>
-        <div class="form-row" style="margin-top:12px;">
-          <div class="form-group">
-            <label>Página:</label>
-            <input type="number" class="input-field" id="sign-page" value="1" min="1">
-          </div>
-          <div class="form-group">
-            <label>Pos X:</label>
-            <input type="number" class="input-field" id="sign-x" value="100">
-          </div>
-          <div class="form-group">
-            <label>Pos Y:</label>
-            <input type="number" class="input-field" id="sign-y" value="100">
           </div>
         </div>
       </div>
@@ -783,7 +886,7 @@
 
   <!-- Crop PDF Modal -->
   <div class="modal-overlay" id="crop-modal-tool" style="display:none;">
-    <div class="modal">
+    <div class="modal modal-visual">
       <div class="modal-header">
         <h3><span class="material-icons-round" style="color:#ab47bc;">crop</span> Recortar PDF</h3>
         <button class="btn btn-ghost modal-close" onclick="document.getElementById('crop-modal-tool').style.display='none'">
@@ -791,38 +894,63 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
+        <div class="form-group" id="crop-upload-group">
           <button class="btn btn-primary" id="crop-select-file" style="width:100%;">
             <span class="material-icons-round">folder_open</span> Seleccionar PDF
           </button>
           <p id="crop-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
         </div>
-        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Márgenes a recortar (en puntos PDF, 72 pts = 1 pulgada):</p>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Arriba:</label>
-            <input type="number" class="input-field" id="crop-top" value="20" min="0">
+
+        <!-- Visual PDF Preview -->
+        <div class="visual-preview" id="crop-preview" style="display:none;">
+          <div class="preview-toolbar">
+            <div class="preview-page-nav">
+              <button class="btn btn-ghost btn-sm" id="crop-prev-page"><span class="material-icons-round">chevron_left</span></button>
+              <span class="preview-page-label" id="crop-page-label">Página 1 de 1</span>
+              <button class="btn btn-ghost btn-sm" id="crop-next-page"><span class="material-icons-round">chevron_right</span></button>
+            </div>
+            <div class="preview-hint-badge" style="background:rgba(171,71,188,0.1); color:#ab47bc;">
+              <span class="material-icons-round">crop</span> Ajusta los márgenes
+            </div>
           </div>
-          <div class="form-group">
-            <label>Abajo:</label>
-            <input type="number" class="input-field" id="crop-bottom" value="20" min="0">
+          <div class="preview-canvas-area" id="crop-canvas-area">
+            <canvas id="crop-preview-canvas"></canvas>
+            <div class="crop-overlay" id="crop-overlay">
+              <div class="crop-shade crop-shade-top" id="crop-shade-top"></div>
+              <div class="crop-shade crop-shade-bottom" id="crop-shade-bottom"></div>
+              <div class="crop-shade crop-shade-left" id="crop-shade-left"></div>
+              <div class="crop-shade crop-shade-right" id="crop-shade-right"></div>
+              <div class="crop-active-area" id="crop-active-area"></div>
+            </div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Izquierda:</label>
-            <input type="number" class="input-field" id="crop-left" value="20" min="0">
+          <div class="crop-controls">
+            <div class="crop-slider-group">
+              <label><span class="material-icons-round" style="font-size:16px;">arrow_upward</span> Arriba</label>
+              <input type="range" class="input-range" id="crop-top" value="20" min="0" max="200">
+              <span class="crop-value" id="crop-top-val">20 pts</span>
+            </div>
+            <div class="crop-slider-group">
+              <label><span class="material-icons-round" style="font-size:16px;">arrow_downward</span> Abajo</label>
+              <input type="range" class="input-range" id="crop-bottom" value="20" min="0" max="200">
+              <span class="crop-value" id="crop-bottom-val">20 pts</span>
+            </div>
+            <div class="crop-slider-group">
+              <label><span class="material-icons-round" style="font-size:16px;">arrow_back</span> Izquierda</label>
+              <input type="range" class="input-range" id="crop-left" value="20" min="0" max="200">
+              <span class="crop-value" id="crop-left-val">20 pts</span>
+            </div>
+            <div class="crop-slider-group">
+              <label><span class="material-icons-round" style="font-size:16px;">arrow_forward</span> Derecha</label>
+              <input type="range" class="input-range" id="crop-right" value="20" min="0" max="200">
+              <span class="crop-value" id="crop-right-val">20 pts</span>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Derecha:</label>
-            <input type="number" class="input-field" id="crop-right" value="20" min="0">
+          <div class="form-group" style="margin-top:8px;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="crop-all-pages" checked>
+              Aplicar a todas las páginas
+            </label>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="crop-all-pages" checked>
-            Aplicar a todas las páginas
-          </label>
         </div>
       </div>
       <div class="modal-footer">
@@ -834,7 +962,7 @@
 
   <!-- Redact PDF Modal -->
   <div class="modal-overlay" id="redact-modal" style="display:none;">
-    <div class="modal modal-lg">
+    <div class="modal modal-visual">
       <div class="modal-header">
         <h3><span class="material-icons-round" style="color:#78909c;">visibility_off</span> Censurar PDF</h3>
         <button class="btn btn-ghost modal-close" onclick="document.getElementById('redact-modal').style.display='none'">
@@ -842,35 +970,33 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
+        <div class="form-group" id="redact-upload-group">
           <button class="btn btn-primary" id="redact-select-file" style="width:100%;">
             <span class="material-icons-round">folder_open</span> Seleccionar PDF
           </button>
           <p id="redact-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
         </div>
-        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Define áreas a censurar en la página (coordenadas PDF en puntos):</p>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Página:</label>
-            <input type="number" class="input-field" id="redact-page" value="1" min="1">
+
+        <!-- Visual PDF Preview -->
+        <div class="visual-preview" id="redact-preview" style="display:none;">
+          <div class="preview-toolbar">
+            <div class="preview-page-nav">
+              <button class="btn btn-ghost btn-sm" id="redact-prev-page"><span class="material-icons-round">chevron_left</span></button>
+              <span class="preview-page-label" id="redact-page-label">Página 1 de 1</span>
+              <button class="btn btn-ghost btn-sm" id="redact-next-page"><span class="material-icons-round">chevron_right</span></button>
+            </div>
+            <div class="preview-hint-badge" style="background:rgba(239,83,80,0.1); color:#ef5350;">
+              <span class="material-icons-round">draw</span> Dibuja rectángulos para censurar
+            </div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>X:</label>
-            <input type="number" class="input-field" id="redact-x" value="50">
+          <div class="preview-canvas-area redact-mode" id="redact-canvas-area">
+            <canvas id="redact-preview-canvas"></canvas>
+            <div class="redact-rects-layer" id="redact-rects-layer"></div>
           </div>
-          <div class="form-group">
-            <label>Y:</label>
-            <input type="number" class="input-field" id="redact-y" value="700">
-          </div>
-          <div class="form-group">
-            <label>Ancho:</label>
-            <input type="number" class="input-field" id="redact-w" value="200">
-          </div>
-          <div class="form-group">
-            <label>Alto:</label>
-            <input type="number" class="input-field" id="redact-h" value="20">
+          <div class="redact-areas-list" id="redact-areas-list">
+            <p class="redact-areas-empty" id="redact-areas-empty">
+              <span class="material-icons-round">info</span> Dibuja sobre el PDF para marcar áreas a censurar
+            </p>
           </div>
         </div>
       </div>
@@ -897,34 +1023,57 @@
           </button>
           <p id="translate-file-name" style="margin-top:8px; font-size:13px; color:var(--text-secondary);"></p>
         </div>
-        <div class="form-row">
-          <div class="form-group">
+        <div class="translate-lang-row">
+          <div class="form-group" style="flex:1;">
             <label>Idioma origen:</label>
-            <select class="input-field" id="translate-source">
-              <option value="es">Español</option>
-              <option value="en">Inglés</option>
-              <option value="fr">Francés</option>
-              <option value="de">Alemán</option>
-              <option value="pt">Portugués</option>
-              <option value="it">Italiano</option>
-              <option value="zh">Chino</option>
-              <option value="ja">Japonés</option>
-              <option value="ko">Coreano</option>
-            </select>
+            <div class="custom-dropdown" id="translate-source-dropdown" data-value="es">
+              <button class="custom-dropdown-trigger" type="button">
+                <span class="dropdown-flag">🇪🇸</span>
+                <span class="dropdown-label">Español</span>
+                <span class="material-icons-round dropdown-arrow">expand_more</span>
+              </button>
+              <div class="custom-dropdown-menu">
+                <div class="custom-dropdown-item active" data-value="es" data-flag="🇪🇸">🇪🇸 Español</div>
+                <div class="custom-dropdown-item" data-value="en" data-flag="🇬🇧">🇬🇧 Inglés</div>
+                <div class="custom-dropdown-item" data-value="fr" data-flag="🇫🇷">🇫🇷 Francés</div>
+                <div class="custom-dropdown-item" data-value="de" data-flag="🇩🇪">🇩🇪 Alemán</div>
+                <div class="custom-dropdown-item" data-value="pt" data-flag="🇵🇹">🇵🇹 Portugués</div>
+                <div class="custom-dropdown-item" data-value="it" data-flag="🇮🇹">🇮🇹 Italiano</div>
+                <div class="custom-dropdown-item" data-value="zh" data-flag="🇨🇳">🇨🇳 Chino</div>
+                <div class="custom-dropdown-item" data-value="ja" data-flag="🇯🇵">🇯🇵 Japonés</div>
+                <div class="custom-dropdown-item" data-value="ko" data-flag="🇰🇷">🇰🇷 Coreano</div>
+                <div class="custom-dropdown-item" data-value="ru" data-flag="🇷🇺">🇷🇺 Ruso</div>
+                <div class="custom-dropdown-item" data-value="ar" data-flag="🇸🇦">🇸🇦 Árabe</div>
+                <div class="custom-dropdown-item" data-value="hi" data-flag="🇮🇳">🇮🇳 Hindi</div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
+          <button class="btn btn-ghost swap-langs-btn" id="translate-swap" title="Intercambiar idiomas">
+            <span class="material-icons-round">swap_horiz</span>
+          </button>
+          <div class="form-group" style="flex:1;">
             <label>Idioma destino:</label>
-            <select class="input-field" id="translate-target">
-              <option value="en">Inglés</option>
-              <option value="es">Español</option>
-              <option value="fr">Francés</option>
-              <option value="de">Alemán</option>
-              <option value="pt">Portugués</option>
-              <option value="it">Italiano</option>
-              <option value="zh">Chino</option>
-              <option value="ja">Japonés</option>
-              <option value="ko">Coreano</option>
-            </select>
+            <div class="custom-dropdown" id="translate-target-dropdown" data-value="en">
+              <button class="custom-dropdown-trigger" type="button">
+                <span class="dropdown-flag">🇬🇧</span>
+                <span class="dropdown-label">Inglés</span>
+                <span class="material-icons-round dropdown-arrow">expand_more</span>
+              </button>
+              <div class="custom-dropdown-menu">
+                <div class="custom-dropdown-item" data-value="es" data-flag="🇪🇸">🇪🇸 Español</div>
+                <div class="custom-dropdown-item active" data-value="en" data-flag="🇬🇧">🇬🇧 Inglés</div>
+                <div class="custom-dropdown-item" data-value="fr" data-flag="🇫🇷">🇫🇷 Francés</div>
+                <div class="custom-dropdown-item" data-value="de" data-flag="🇩🇪">🇩🇪 Alemán</div>
+                <div class="custom-dropdown-item" data-value="pt" data-flag="🇵🇹">🇵🇹 Portugués</div>
+                <div class="custom-dropdown-item" data-value="it" data-flag="🇮🇹">🇮🇹 Italiano</div>
+                <div class="custom-dropdown-item" data-value="zh" data-flag="🇨🇳">🇨🇳 Chino</div>
+                <div class="custom-dropdown-item" data-value="ja" data-flag="🇯🇵">🇯🇵 Japonés</div>
+                <div class="custom-dropdown-item" data-value="ko" data-flag="🇰🇷">🇰🇷 Coreano</div>
+                <div class="custom-dropdown-item" data-value="ru" data-flag="🇷🇺">🇷🇺 Ruso</div>
+                <div class="custom-dropdown-item" data-value="ar" data-flag="🇸🇦">🇸🇦 Árabe</div>
+                <div class="custom-dropdown-item" data-value="hi" data-flag="🇮🇳">🇮🇳 Hindi</div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="form-group" id="translate-preview-group" style="display:none;">
@@ -961,6 +1110,14 @@
           <div class="form-group">
             <label>Color:</label>
             <input type="color" class="input-color" id="text-color" value="#1a1a2e">
+          </div>
+          <div class="form-group">
+            <label>Fuente:</label>
+            <select class="input-field" id="text-font">
+              <option value="Helvetica" class="font-preview font-helvetica">Helvetica</option>
+              <option value="TimesRoman" class="font-preview font-times">Times New Roman</option>
+              <option value="Courier" class="font-preview font-courier">Courier New</option>
+            </select>
           </div>
         </div>
         <div class="form-row">
@@ -1420,5 +1577,6 @@
   <script src="lib/Sortable.min.js"></script>
   <script src="js/app.js"></script>
   <script src="js/tools.js"></script>
+  <script src="js/features.js"></script>
 </body>
 </html>
